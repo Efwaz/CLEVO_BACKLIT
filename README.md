@@ -5,6 +5,12 @@ multicolor LED (`/sys/class/leds/rgb:kbd_backlight`, e.g. TUXEDO / Clevo / SAGER
 since these rebrand the same Clevo/Tongfang chassis).
 A small floating GTK panel plus a command-line tool.
 
+![Backlit panel](backlit_screenshot.png)
+
+> **Note:** built and only tested on one laptop (TUXEDO/Clevo chassis, niri compositor). It should
+> work on any device exposing the same `multi_intensity`/`brightness` sysfs interface, but if
+> something doesn't, please open an issue rather than assume it's broken everywhere.
+
 ## Features
 
 - **Colors**: standard swatches, saved favorites (right-click to rename or delete), a color wheel with hex input, and a brightness slider.
