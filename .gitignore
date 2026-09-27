@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+# per-user state, written next to the scripts when they run from this folder
+kbd-state.txt
+kbd-favorites.txt
+kbd-lang.txt
+kbd-rate.txt
+kbd-effect.txt
+kbd-effect.txt.tmp
+kbd-battery.enabled

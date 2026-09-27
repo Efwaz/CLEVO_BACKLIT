@@ -1,0 +1,10 @@
+[Unit]
+Description=Restore keyboard backlight color/brightness
+After=graphical-session-pre.target
+
+[Service]
+Type=simple
+ExecStart=%h/.config/scripts/kbd-restore.sh
+
+[Install]
+WantedBy=graphical-session.target

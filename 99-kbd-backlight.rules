@@ -1,0 +1,1 @@
+SUBSYSTEM=="leds", KERNEL=="rgb:kbd_backlight", RUN+="/bin/chgrp input /sys/class/leds/rgb:kbd_backlight/brightness /sys/class/leds/rgb:kbd_backlight/multi_intensity", RUN+="/bin/chmod g+w /sys/class/leds/rgb:kbd_backlight/brightness /sys/class/leds/rgb:kbd_backlight/multi_intensity"

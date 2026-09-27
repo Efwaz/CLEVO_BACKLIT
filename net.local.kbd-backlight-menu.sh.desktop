@@ -1,0 +1,7 @@
+[Desktop Entry]
+Exec=@HOME@/.config/scripts/kbd-backlight-menu.sh
+Name=backlit
+NoDisplay=true
+StartupNotify=false
+Type=Application
+X-KDE-GlobalAccel-CommandShortcut=true
