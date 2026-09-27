@@ -1,7 +1,8 @@
 # Backlit
 
 Keyboard backlight control for Linux laptops whose RGB backlight is exposed as a single
-multicolor LED (`/sys/class/leds/rgb:kbd_backlight`, e.g. TUXEDO / Clevo with `tuxedo-drivers`).
+multicolor LED (`/sys/class/leds/rgb:kbd_backlight`, e.g. TUXEDO / Clevo / SAGER with `tuxedo-drivers`,
+since these rebrand the same Clevo/Tongfang chassis).
 A small floating GTK panel plus a command-line tool.
 
 ## Features
