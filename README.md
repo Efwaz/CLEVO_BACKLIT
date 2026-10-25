@@ -19,7 +19,7 @@ A small floating GTK panel plus a command-line tool.
 - **Effects**: Breathing, Rainbow, Wave, Reactive (flashes on key press), Fire, Heartbeat, with adjustable speed.
 - **Auto**: off in daylight, on from sunset to sunrise (computed offline, no dependencies), or between hours you choose (panel fields, or `kbd-ctl.py --hours 18:00-06:00`; `--hours sun` goes back to the sun). Sun times use the latitude/longitude at the top of `kbd-auto.py`: edit `LAT, LON` for your location.
 - **Persistence**: static color, battery mode and effects survive a reboot until you pick something else.
-- **Theme**: the panel can follow the system or be forced light or dark (⚙ → Theme).
+- **Theme**: the panel can follow the system, be forced light or dark, or use any KDE color scheme (the ones Dolphin offers: Breeze, Nord, Emerald…) found in `/usr/share/color-schemes` or `~/.local/share/color-schemes` (⚙ → Theme).
 - **CLI** for keyboard shortcuts, and a UI in 10 languages (⚙ menu → Language).
 
 The LED is a single zone, so everything applies to the whole keyboard. Only one mode is active at a time;

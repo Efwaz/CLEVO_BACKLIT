@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import colorsys
+import configparser
+import glob
 import math
 import os
 import re
@@ -152,7 +154,8 @@ def apply_theme(mode):
     prefer-dark) and set prefer-dark for themes that honor it; "system" picks whichever the desktop is in."""
     if mode == "system":
         mode = system_mode()
-    dark = mode == "dark"
+    palette = PALETTES.get(mode) or scheme_palette(mode) or PALETTES[system_mode()]
+    dark = _luma(palette["bg"]) < 128
     base = re.sub(r"-dark$", "", _SYSTEM_THEME, flags=re.I)
     name = _SYSTEM_THEME
     for cand in ((base + "-Dark", base + "-dark") if dark else (base,)):
@@ -161,7 +164,49 @@ def apply_theme(mode):
             break
     _SETTINGS.set_property("gtk-theme-name", name)
     _SETTINGS.set_property("gtk-application-prefer-dark-theme", dark)
-    _override_colors(mode)
+    _override_colors(palette)
+
+
+# KDE color schemes (the themes Dolphin offers): ~/.local/share/color-schemes wins over /usr/share
+SCHEME_DIRS = ("/usr/share/color-schemes", os.path.expanduser("~/.local/share/color-schemes"))
+
+
+def schemes():
+    """{file stem: (label, path)}; a label shared by several files falls back to the file stem."""
+    found = {}
+    for d in SCHEME_DIRS:
+        for path in sorted(glob.glob(f"{d}/*.colors")):
+            cp = configparser.ConfigParser(interpolation=None, strict=False)
+            cp.read(path)
+            found[os.path.basename(path)[:-7]] = (cp.get("General", "Name", fallback=""), path)
+    labels = [lab for lab, _ in found.values()]
+    return {stem: (stem if not lab or labels.count(lab) > 1 else lab, path) for stem, (lab, path) in found.items()}
+
+
+def scheme_palette(stem):
+    """Palette (same keys as PALETTES) built from a .colors file, or None if it is missing or odd."""
+    entry = schemes().get(stem)
+    if not entry:
+        return None
+    cp = configparser.ConfigParser(interpolation=None, strict=False)
+    cp.read(entry[1])
+    try:
+        def get(sec, key):
+            return tuple(int(x) for x in cp[f"Colors:{sec}"][key].split(",")[:3])
+        bg, view = get("Window", "backgroundnormal"), get("View", "backgroundnormal")
+        fg = get("Window", "foregroundnormal")
+        mix = lambda a, b: tuple(round(x * 0.8 + y * 0.2) for x, y in zip(a, b))
+        colors = dict(bg=bg, base=view, fg=fg, line=mix(bg, fg), btn=get("Button", "backgroundnormal"),
+                      sel=get("Selection", "backgroundnormal"), selfg=get("Selection", "foregroundnormal"),
+                      dim=get("Window", "foregroundinactive"), dimbg=mix(bg, view))
+    except (KeyError, ValueError):
+        return None
+    return {k: "#%02x%02x%02x" % c for k, c in colors.items()}
+
+
+def _luma(hex_color):
+    r, g, b = (int(hex_color[i:i + 2], 16) for i in (1, 3, 5))
+    return 0.299 * r + 0.587 * g + 0.114 * b
 
 
 # Breeze-style palettes. ~/.config/gtk-3.0/colors.css (written by DMS/matugen) hard-codes every
@@ -181,7 +226,7 @@ COLOR_RULES = [(r"^(error|success)", None), (r"insensitive.*(fg|foreground|text)
 _color_provider = None
 
 
-def _override_colors(mode):
+def _override_colors(palette):
     global _color_provider
     screen = Gdk.Screen.get_default()
     if _color_provider:
@@ -192,13 +237,13 @@ def _override_colors(mode):
             names = re.findall(r"@define-color (\w+)_breeze ", f.read())
     except OSError:
         return
-    if not mode or not names:
+    if not names:
         return
     css = ""
     for n in names:
         key = next(k for rx, k in COLOR_RULES if re.search(rx, n))
         if key:
-            css += f"@define-color {n}_breeze {PALETTES[mode][key]};\n"
+            css += f"@define-color {n}_breeze {palette[key]};\n"
     _color_provider = Gtk.CssProvider()
     _color_provider.load_from_data(css.encode())
     Gtk.StyleContext.add_provider_for_screen(screen, _color_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER + 1)
@@ -356,8 +401,9 @@ class Panel(Gtk.Window):
 
         theme = Gtk.MenuItem()
         self._tr(theme.set_label, "menu_theme")
-        theme.set_submenu(self._radio_menu([(t(f"theme_{m}"), m) for m in kbd_led.THEME_CHOICES],
-                                           kbd_led.theme(), self.on_theme_selected))
+        entries = [(t(f"theme_{m}"), m) for m in kbd_led.THEME_CHOICES]
+        entries += [(label, stem) for stem, (label, _path) in sorted(schemes().items(), key=lambda kv: kv[1][0].lower())]
+        theme.set_submenu(self._radio_menu(entries, kbd_led.theme(), self.on_theme_selected))
         menu.append(theme)
 
         menu.append(Gtk.SeparatorMenuItem())

@@ -168,7 +168,7 @@ def theme():
     try:
         with open(THEME_FILE) as f:
             mode = f.read().strip()
-        return mode if mode in THEME_CHOICES else "system"
+        return mode or "system"  # system, light, dark, or the stem of a KDE .colors file
     except OSError:
         return "system"
 
