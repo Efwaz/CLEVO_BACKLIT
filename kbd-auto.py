@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Automatic backlight: off in daylight, on (saved color/brightness) from sunset until sunrise."""
+"""Automatic backlight (hours from kbd-auto.txt if set): off in daylight, on (saved color/brightness) from sunset until sunrise."""
 import math
 import os
 import sys
@@ -30,6 +30,11 @@ def sun_times(now):
 
 
 def is_night(now):
+    hours = kbd_led.read_auto_hours()  # user-chosen (on, off) in local time, else the sun
+    if hours:
+        on, off = hours
+        m = now.astimezone().hour * 60 + now.astimezone().minute
+        return (on <= m < off) if on < off else (m >= on or m < off)
     rise, sset = sun_times(now)
     return now < rise or now >= sset
 
@@ -58,6 +63,7 @@ def demo():
     assert 10.5 < rise.hour + rise.minute / 60 < 11.5, rise  # ~06:00 Bogota
     assert 22.5 < sset.hour + sset.minute / 60 < 23.5, sset  # ~18:00 Bogota
     assert is_night(day.replace(hour=2)) and not is_night(day.replace(hour=17))
+    assert kbd_led.parse_hours("18:00-06:30") == (1080, 390) and not kbd_led.parse_hours("25:00-1:00")
     print("ok", rise, sset)
 
 

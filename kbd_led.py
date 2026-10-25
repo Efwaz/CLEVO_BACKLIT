@@ -11,6 +11,7 @@ FAVORITES_FILE = os.path.join(_SCRIPT_DIR, "kbd-favorites.txt")
 STATE_FILE = os.path.join(_SCRIPT_DIR, "kbd-state.txt")
 BATTERY_FLAG = os.path.join(_SCRIPT_DIR, "kbd-battery.enabled")  # exists = battery mode survives reboot
 AUTO_FLAG = os.path.join(_SCRIPT_DIR, "kbd-auto.enabled")  # exists = auto (daylight) mode survives reboot
+AUTO_HOURS_FILE = os.path.join(_SCRIPT_DIR, "kbd-auto.txt")  # "HH:MM-HH:MM" (on-off); absent = follow the sun
 
 STANDARD_COLORS = [
     ("Blanco", (255, 255, 255), None),
@@ -158,3 +159,30 @@ def screen_fps():
 def set_screen_fps(fps):
     with open(SCREEN_FPS_FILE, "w") as f:
         f.write(str(fps))
+
+
+def parse_hours(text):
+    """"18:00-06:00" -> (on, off) in minutes after midnight, or None if malformed."""
+    try:
+        a, b = (tuple(int(x) for x in part.split(":")) for part in text.strip().split("-"))
+        if all(0 <= h < 24 and 0 <= m < 60 for h, m in (a, b)):
+            return a[0] * 60 + a[1], b[0] * 60 + b[1]
+    except ValueError:
+        pass
+
+
+def read_auto_hours():
+    try:
+        with open(AUTO_HOURS_FILE) as f:
+            return parse_hours(f.read())
+    except OSError:
+        return None
+
+
+def write_auto_hours(text):
+    """Save custom hours ("HH:MM-HH:MM"); None/"sun" goes back to following the sun."""
+    if text and parse_hours(text):
+        with open(AUTO_HOURS_FILE, "w") as f:
+            f.write(text.strip() + "\n")
+    elif os.path.exists(AUTO_HOURS_FILE):
+        os.remove(AUTO_HOURS_FILE)

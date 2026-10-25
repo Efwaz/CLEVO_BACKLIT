@@ -205,6 +205,23 @@ class Panel(Gtk.Window):
         box.pack_start(self.battery_btn, False, False, 0)
         self.auto_btn = self._mode_button("auto", "auto", "auto_tip")
         box.pack_start(self.auto_btn, False, False, 0)
+        hours_box = Gtk.Box(spacing=4)
+        self.hours_check = Gtk.CheckButton()
+        self._tr(self.hours_check.set_label, "auto_hours")
+        self._tr(self.hours_check.set_tooltip_text, "auto_hours_tip")
+        self.hours_on, self.hours_off = (Gtk.Entry(max_length=5, width_chars=5, xalign=0.5) for _ in range(2))
+        saved = kbd_led.read_auto_hours()
+        self.hours_check.set_active(bool(saved))
+        fmt = lambda m: f"{m // 60:02d}:{m % 60:02d}"
+        self.hours_on.set_text(fmt(saved[0]) if saved else "18:00")
+        self.hours_off.set_text(fmt(saved[1]) if saved else "06:00")
+        for w in (self.hours_on, self.hours_off):
+            w.connect("changed", self.on_hours_change)
+        self.hours_check.connect("toggled", self.on_hours_change)
+        hours_box.pack_start(self.hours_check, True, True, 0)
+        hours_box.pack_end(self.hours_off, False, False, 0)
+        hours_box.pack_end(self.hours_on, False, False, 0)
+        box.pack_start(hours_box, False, False, 0)
 
         # effects need a plain base color, so they are greyed out while battery/live-screen own the color
         self.effects_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
@@ -450,6 +467,11 @@ class Panel(Gtk.Window):
             self._ensure_lit()
             level = round(self.max_brightness * self.scale.get_value() / 100)
             kbd_led.start_effect(btn.mode, round(self.speed_scale.get_value()), self.current_rgb, level)
+
+    def on_hours_change(self, *_args):
+        """Save the custom on/off hours (the running auto mode re-reads them within 30s)."""
+        text = f"{self.hours_on.get_text()}-{self.hours_off.get_text()}" if self.hours_check.get_active() else None
+        kbd_led.write_auto_hours(text)
 
     def on_speed_change(self, scale):
         cfg = kbd_led.read_effect()
