@@ -146,6 +146,47 @@ def apply_theme(mode):
                 break
     _SETTINGS.set_property("gtk-theme-name", name)
     _SETTINGS.set_property("gtk-application-prefer-dark-theme", dark)
+    _override_colors(None if mode == "system" else mode)
+
+
+# Breeze-style palettes. ~/.config/gtk-3.0/colors.css (written by DMS/matugen) hard-codes every
+# `@define-color *_breeze` for the user's wallpaper, which beats any theme, so for light/dark the
+# panel redefines the same names in a provider that outranks the user's CSS.
+PALETTES = {
+    "light": dict(bg="#eff0f1", base="#ffffff", fg="#232627", line="#bdc3c7", btn="#e3e5e7",
+                  sel="#3daee9", selfg="#ffffff", dim="#a0a1a2", dimbg="#e8e9ea"),
+    "dark": dict(bg="#31363b", base="#232629", fg="#eff0f1", line="#4d4d4d", btn="#3b4045",
+                 sel="#3daee9", selfg="#ffffff", dim="#7f8c8d", dimbg="#2a2e32"),
+}
+# first matching rule wins, tested against the color name without its `_breeze` suffix
+COLOR_RULES = [(r"^(error|success)", None), (r"insensitive.*(fg|foreground|text)", "dim"),
+               (r"insensitive|unfocused_view", "dimbg"), (r"selected_fg|foreground_active", "selfg"),
+               (r"selected|decoration", "sel"), (r"border", "line"), (r"button_background", "btn"),
+               (r"foreground|_fg_|text|link", "fg"), (r"base_color|content_view|view_bg", "base"), (r"", "bg")]
+_color_provider = None
+
+
+def _override_colors(mode):
+    global _color_provider
+    screen = Gdk.Screen.get_default()
+    if _color_provider:
+        Gtk.StyleContext.remove_provider_for_screen(screen, _color_provider)
+        _color_provider = None
+    try:
+        with open(os.path.expanduser("~/.config/gtk-3.0/colors.css")) as f:
+            names = re.findall(r"@define-color (\w+)_breeze ", f.read())
+    except OSError:
+        return
+    if not mode or not names:
+        return
+    css = ""
+    for n in names:
+        key = next(k for rx, k in COLOR_RULES if re.search(rx, n))
+        if key:
+            css += f"@define-color {n}_breeze {PALETTES[mode][key]};\n"
+    _color_provider = Gtk.CssProvider()
+    _color_provider.load_from_data(css.encode())
+    Gtk.StyleContext.add_provider_for_screen(screen, _color_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER + 1)
 
 
 class Panel(Gtk.Window):
