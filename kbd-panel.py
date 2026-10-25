@@ -149,13 +149,14 @@ def system_mode():
     return "dark" if _SYSTEM_DARK else "light"
 
 
-def apply_theme(mode):
+def apply_theme():
     """light/dark switch to the "-Dark"/"-dark" sibling of the system theme (Breeze ignores
     prefer-dark) and set prefer-dark for themes that honor it; "system" picks whichever the desktop is in."""
+    mode = kbd_led.theme()
     if mode == "system":
         mode = system_mode()
-    palette = PALETTES.get(mode) or scheme_palette(mode) or PALETTES[system_mode()]
-    dark = _luma(palette["bg"]) < 128
+    dark = mode == "dark"
+    palette = themed(PALETTES[mode], kbd_led.scheme())
     base = re.sub(r"-dark$", "", _SYSTEM_THEME, flags=re.I)
     name = _SYSTEM_THEME
     for cand in ((base + "-Dark", base + "-dark") if dark else (base,)):
@@ -167,41 +168,44 @@ def apply_theme(mode):
     _override_colors(palette)
 
 
-# KDE color schemes (the themes Dolphin offers): ~/.local/share/color-schemes wins over /usr/share
+# KDE color schemes (the themes Dolphin offers), grouped by family: BreezeDark/BreezeLight -> Breeze.
+# A theme only contributes its accent; the mode (light/dark) picks the base palette it tints.
 SCHEME_DIRS = ("/usr/share/color-schemes", os.path.expanduser("~/.local/share/color-schemes"))
 
 
-def schemes():
-    """{file stem: (label, path)}; a label shared by several files falls back to the file stem."""
+def families():
+    """{family: path of the file that gives its accent}; the file named exactly like the family wins."""
     found = {}
     for d in SCHEME_DIRS:
         for path in sorted(glob.glob(f"{d}/*.colors")):
-            cp = configparser.ConfigParser(interpolation=None, strict=False)
-            cp.read(path)
-            found[os.path.basename(path)[:-7]] = (cp.get("General", "Name", fallback=""), path)
-    labels = [lab for lab, _ in found.values()]
-    return {stem: (stem if not lab or labels.count(lab) > 1 else lab, path) for stem, (lab, path) in found.items()}
+            stem = os.path.basename(path)[:-7]
+            fam = re.sub(r"(Lightly\d*|Light|Dark|Smooth|Classic)$", "", stem) or stem
+            if fam not in found or stem == fam:
+                found[fam] = path
+    return found
 
 
-def scheme_palette(stem):
-    """Palette (same keys as PALETTES) built from a .colors file, or None if it is missing or odd."""
-    entry = schemes().get(stem)
-    if not entry:
-        return None
+def _tint(color, accent, w):
+    return tuple(round(x * (1 - w) + y * w) for x, y in zip(color, accent))
+
+
+def themed(palette, family):
+    """The mode's base palette with the family's accent on selection and a light wash on surfaces."""
+    path = families().get(family)
+    if not path:
+        return palette
     cp = configparser.ConfigParser(interpolation=None, strict=False)
-    cp.read(entry[1])
+    cp.read(path)
     try:
-        def get(sec, key):
-            return tuple(int(x) for x in cp[f"Colors:{sec}"][key].split(",")[:3])
-        bg, view = get("Window", "backgroundnormal"), get("View", "backgroundnormal")
-        fg = get("Window", "foregroundnormal")
-        mix = lambda a, b: tuple(round(x * 0.8 + y * 0.2) for x, y in zip(a, b))
-        colors = dict(bg=bg, base=view, fg=fg, line=mix(bg, fg), btn=get("Button", "backgroundnormal"),
-                      sel=get("Selection", "backgroundnormal"), selfg=get("Selection", "foregroundnormal"),
-                      dim=get("Window", "foregroundinactive"), dimbg=mix(bg, view))
+        accent = tuple(int(x) for x in cp["Colors:Selection"]["backgroundnormal"].split(",")[:3])
     except (KeyError, ValueError):
-        return None
-    return {k: "#%02x%02x%02x" % c for k, c in colors.items()}
+        return palette
+    rgb = lambda h: tuple(int(h[i:i + 2], 16) for i in (1, 3, 5))
+    hexs = lambda c: "#%02x%02x%02x" % c
+    out = dict(palette, sel=hexs(accent), selfg="#ffffff" if _luma(hexs(accent)) < 150 else "#111111")
+    for key, w in (("bg", .10), ("base", .05), ("btn", .16), ("line", .35), ("dimbg", .10)):
+        out[key] = hexs(_tint(rgb(palette[key]), accent, w))
+    return out
 
 
 def _luma(hex_color):
@@ -399,11 +403,16 @@ class Panel(Gtk.Window):
                                           kbd_led.screen_fps(), kbd_led.set_screen_fps))
         menu.append(rate)
 
+        mode = Gtk.MenuItem()
+        self._tr(mode.set_label, "menu_mode")
+        mode.set_submenu(self._radio_menu([(t(f"theme_{m}"), m) for m in kbd_led.THEME_CHOICES],
+                                          kbd_led.theme(), self.on_mode_selected))
+        menu.append(mode)
+
         theme = Gtk.MenuItem()
         self._tr(theme.set_label, "menu_theme")
-        entries = [(t(f"theme_{m}"), m) for m in kbd_led.THEME_CHOICES]
-        entries += [(label, stem) for stem, (label, _path) in sorted(schemes().items(), key=lambda kv: kv[1][0].lower())]
-        theme.set_submenu(self._radio_menu(entries, kbd_led.theme(), self.on_theme_selected))
+        entries = [(t("theme_default"), "default")] + [(f, f) for f in sorted(families(), key=str.lower)]
+        theme.set_submenu(self._radio_menu(entries, kbd_led.scheme(), self.on_scheme_selected))
         menu.append(theme)
 
         menu.append(Gtk.SeparatorMenuItem())
@@ -435,9 +444,13 @@ class Panel(Gtk.Window):
             self._populate_flow()  # swatch names
             self._refresh_effects()
 
-    def on_theme_selected(self, mode):
+    def on_mode_selected(self, mode):
         kbd_led.set_theme(mode)
-        apply_theme(mode)
+        apply_theme()
+
+    def on_scheme_selected(self, name):
+        kbd_led.set_scheme(name)
+        apply_theme()
 
     def show_about(self):
         dlg = Gtk.AboutDialog(transient_for=self, modal=True)
@@ -766,9 +779,9 @@ class Panel(Gtk.Window):
         self._populate_flow()
 
 
-apply_theme(kbd_led.theme())
+apply_theme()
 if _DESKTOP:  # follow the system live while "same as system" is selected
-    _DESKTOP.connect("changed::color-scheme", lambda *_: kbd_led.theme() == "system" and apply_theme("system"))
+    _DESKTOP.connect("changed::color-scheme", lambda *_: kbd_led.theme() == "system" and apply_theme())
 win = Panel()
 win.show_all()
 Gtk.main()

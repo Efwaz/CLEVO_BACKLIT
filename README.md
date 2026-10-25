@@ -19,7 +19,7 @@ A small floating GTK panel plus a command-line tool.
 - **Effects**: Breathing, Rainbow, Wave, Reactive (flashes on key press), Fire, Heartbeat, with adjustable speed.
 - **Auto**: off in daylight, on from sunset to sunrise (computed offline, no dependencies), or between hours you choose (panel fields, or `kbd-ctl.py --hours 18:00-06:00`; `--hours sun` goes back to the sun). Sun times use the latitude/longitude at the top of `kbd-auto.py`: edit `LAT, LON` for your location.
 - **Persistence**: static color, battery mode and effects survive a reboot until you pick something else.
-- **Theme**: the panel can follow the system, be forced light or dark, or use any KDE color scheme (the ones Dolphin offers: Breeze, Nord, Emerald…) found in `/usr/share/color-schemes` or `~/.local/share/color-schemes` (⚙ → Theme).
+- **Mode and theme**: ⚙ → Mode follows the system or forces light or dark; ⚙ → Theme adds a KDE color scheme family as an accent (the ones Dolphin offers: Breeze, Nord, Emerald…) found in `/usr/share/color-schemes` or `~/.local/share/color-schemes`. The two are independent.
 - **CLI** for keyboard shortcuts, and a UI in 10 languages (⚙ menu → Language).
 
 The LED is a single zone, so everything applies to the whole keyboard. Only one mode is active at a time;
@@ -72,7 +72,7 @@ kbd-ctl.py --off
   The cost grows with the size of the area, so capture is capped at about 35% of one CPU core; a small area gives the tightest sync.
 - **Reactive** reads key-press events from `/dev/input` (hence the `input` group). Only the *timing* of presses is used; nothing is recorded.
 - Settings and state live next to the installed scripts: `kbd-state.txt`, `kbd-favorites.txt`, `kbd-lang.txt`, `kbd-rate.txt`,
-  `kbd-theme.txt`, `kbd-effect.txt`, `kbd-battery.enabled`.
+  `kbd-theme.txt` (mode), `kbd-scheme.txt` (theme), `kbd-effect.txt`, `kbd-battery.enabled`.
 - **Theme**: light/dark switch to the `-Dark` sibling of the current GTK theme and redefine the `*_breeze` colors with a built-in palette,
   because generated `~/.config/gtk-3.0/colors.css` files (DMS/matugen) override any theme. "Same as system" follows the desktop's `color-scheme` (light/dark) and updates live when it changes.
 - Other hardware: change `LED_PATH` in `kbd_led.py`. A driver with several zones or per-key RGB would need its own code.

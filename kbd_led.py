@@ -27,7 +27,8 @@ STANDARD_COLORS = [
 SCREEN_FPS_FILE = os.path.join(_SCRIPT_DIR, "kbd-rate.txt")
 SCREEN_FPS_CHOICES = (10, 15, 20, 30)  # grim needs ~30ms per capture, so 30 is about the ceiling
 THEME_FILE = os.path.join(_SCRIPT_DIR, "kbd-theme.txt")
-THEME_CHOICES = ("system", "light", "dark")
+THEME_CHOICES = ("system", "light", "dark")  # mode
+SCHEME_FILE = os.path.join(_SCRIPT_DIR, "kbd-scheme.txt")  # theme family, "default" = none
 EFFECT_FILE = os.path.join(_SCRIPT_DIR, "kbd-effect.txt")  # exists = effect mode on (and survives reboot)
 
 EFFECTS = ("respiracion", "arcoiris", "onda", "pulsacion", "fuego", "latido")  # texts live in kbd_i18n
@@ -168,7 +169,7 @@ def theme():
     try:
         with open(THEME_FILE) as f:
             mode = f.read().strip()
-        return mode or "system"  # system, light, dark, or the stem of a KDE .colors file
+        return mode if mode in THEME_CHOICES else "system"
     except OSError:
         return "system"
 
@@ -176,6 +177,19 @@ def theme():
 def set_theme(mode):
     with open(THEME_FILE, "w") as f:
         f.write(mode)
+
+
+def scheme():
+    try:
+        with open(SCHEME_FILE) as f:
+            return f.read().strip() or "default"
+    except OSError:
+        return "default"
+
+
+def set_scheme(name):
+    with open(SCHEME_FILE, "w") as f:
+        f.write(name)
 
 
 def parse_hours(text):
