@@ -128,13 +128,24 @@ class ColorWheel(Gtk.DrawingArea):
         return True
 
 
-_SYSTEM_DARK = Gtk.Settings.get_default().get_property("gtk-application-prefer-dark-theme")
+_SETTINGS = Gtk.Settings.get_default()
+_SYSTEM_THEME = _SETTINGS.get_property("gtk-theme-name")
+_SYSTEM_DARK = _SETTINGS.get_property("gtk-application-prefer-dark-theme")
 
 
 def apply_theme(mode):
-    """"system" restores the GTK setting found at startup; light/dark force prefer-dark."""
-    dark = _SYSTEM_DARK if mode == "system" else mode == "dark"
-    Gtk.Settings.get_default().set_property("gtk-application-prefer-dark-theme", dark)
+    """"system" restores what GTK had at startup. light/dark switch to the "-Dark"/"-dark" sibling of
+    the system theme (Breeze ignores prefer-dark) and also set prefer-dark for themes that honor it."""
+    base = re.sub(r"-dark$", "", _SYSTEM_THEME, flags=re.I)
+    name, dark = _SYSTEM_THEME, _SYSTEM_DARK
+    if mode != "system":
+        dark = mode == "dark"
+        for cand in ((base + "-Dark", base + "-dark") if dark else (base,)):
+            if os.path.isdir(f"/usr/share/themes/{cand}") or os.path.isdir(os.path.expanduser(f"~/.themes/{cand}")):
+                name = cand
+                break
+    _SETTINGS.set_property("gtk-theme-name", name)
+    _SETTINGS.set_property("gtk-application-prefer-dark-theme", dark)
 
 
 class Panel(Gtk.Window):
