@@ -74,7 +74,7 @@ kbd-ctl.py --off
 - Settings and state live next to the installed scripts: `kbd-state.txt`, `kbd-favorites.txt`, `kbd-lang.txt`, `kbd-rate.txt`,
   `kbd-theme.txt`, `kbd-effect.txt`, `kbd-battery.enabled`.
 - **Theme**: light/dark switch to the `-Dark` sibling of the current GTK theme and redefine the `*_breeze` colors with a built-in palette,
-  because generated `~/.config/gtk-3.0/colors.css` files (DMS/matugen) override any theme. "Same as system" leaves GTK untouched.
+  because generated `~/.config/gtk-3.0/colors.css` files (DMS/matugen) override any theme. "Same as system" follows the desktop's `color-scheme` (light/dark) and updates live when it changes.
 - Other hardware: change `LED_PATH` in `kbd_led.py`. A driver with several zones or per-key RGB would need its own code.
 - **Add a language**: add an entry to `LANGS` and a value list to `_TEXTS` and `_CLI` in `kbd_i18n.py` (a check on import flags missing keys).
 

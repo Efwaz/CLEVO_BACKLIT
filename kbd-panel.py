@@ -8,7 +8,7 @@ import sys
 import cairo
 import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk, Gio
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, SCRIPT_DIR)
@@ -133,20 +133,35 @@ _SYSTEM_THEME = _SETTINGS.get_property("gtk-theme-name")
 _SYSTEM_DARK = _SETTINGS.get_property("gtk-application-prefer-dark-theme")
 
 
+_DESKTOP = None  # org.gnome.desktop.interface: DMS keeps its color-scheme in step with light/dark
+_src = Gio.SettingsSchemaSource.get_default()
+if _src and _src.lookup("org.gnome.desktop.interface", True):
+    _DESKTOP = Gio.Settings.new("org.gnome.desktop.interface")
+
+
+def system_mode():
+    """"dark" or "light" as the desktop currently has it (GTK's own startup setting if it states none)."""
+    scheme = _DESKTOP.get_string("color-scheme") if _DESKTOP else ""
+    if scheme in ("prefer-dark", "prefer-light"):
+        return "dark" if scheme == "prefer-dark" else "light"
+    return "dark" if _SYSTEM_DARK else "light"
+
+
 def apply_theme(mode):
-    """"system" restores what GTK had at startup. light/dark switch to the "-Dark"/"-dark" sibling of
-    the system theme (Breeze ignores prefer-dark) and also set prefer-dark for themes that honor it."""
+    """light/dark switch to the "-Dark"/"-dark" sibling of the system theme (Breeze ignores
+    prefer-dark) and set prefer-dark for themes that honor it; "system" picks whichever the desktop is in."""
+    if mode == "system":
+        mode = system_mode()
+    dark = mode == "dark"
     base = re.sub(r"-dark$", "", _SYSTEM_THEME, flags=re.I)
-    name, dark = _SYSTEM_THEME, _SYSTEM_DARK
-    if mode != "system":
-        dark = mode == "dark"
-        for cand in ((base + "-Dark", base + "-dark") if dark else (base,)):
-            if os.path.isdir(f"/usr/share/themes/{cand}") or os.path.isdir(os.path.expanduser(f"~/.themes/{cand}")):
-                name = cand
-                break
+    name = _SYSTEM_THEME
+    for cand in ((base + "-Dark", base + "-dark") if dark else (base,)):
+        if os.path.isdir(f"/usr/share/themes/{cand}") or os.path.isdir(os.path.expanduser(f"~/.themes/{cand}")):
+            name = cand
+            break
     _SETTINGS.set_property("gtk-theme-name", name)
     _SETTINGS.set_property("gtk-application-prefer-dark-theme", dark)
-    _override_colors(None if mode == "system" else mode)
+    _override_colors(mode)
 
 
 # Breeze-style palettes. ~/.config/gtk-3.0/colors.css (written by DMS/matugen) hard-codes every
@@ -706,6 +721,8 @@ class Panel(Gtk.Window):
 
 
 apply_theme(kbd_led.theme())
+if _DESKTOP:  # follow the system live while "same as system" is selected
+    _DESKTOP.connect("changed::color-scheme", lambda *_: kbd_led.theme() == "system" and apply_theme("system"))
 win = Panel()
 win.show_all()
 Gtk.main()
