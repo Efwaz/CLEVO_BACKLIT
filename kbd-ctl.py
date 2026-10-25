@@ -3,6 +3,7 @@
   kbd-ctl.py --color red|#FF8800|255,136,0
   kbd-ctl.py --brightness 40
   kbd-ctl.py --battery
+  kbd-ctl.py --auto
   kbd-ctl.py --effect rainbow --speed 7
   kbd-ctl.py --off"""
 import argparse
@@ -47,16 +48,20 @@ p = argparse.ArgumentParser(description=t("cli_desc"))
 p.add_argument("--color", help=t("cli_color"))
 p.add_argument("--brightness", type=int, choices=range(101), metavar="0-100", help=t("cli_brightness"))
 p.add_argument("--battery", action="store_true", help=t("cli_battery"))
+p.add_argument("--auto", action="store_true", help=t("cli_auto"))
 p.add_argument("--effect", metavar="NAME", help=f"{t('cli_effect')}: " + ", ".join(t(f"fx.{k}") for k in kbd_led.EFFECTS))
 p.add_argument("--speed", type=int, choices=range(1, 11), metavar="1-10", help=t("cli_speed"))
 p.add_argument("--off", action="store_true", help=t("cli_off"))
 args = p.parse_args()
-if not (args.color or args.brightness is not None or args.battery or args.off or args.effect):
+if not (args.color or args.brightness is not None or args.battery or args.auto or args.off or args.effect):
     p.error(t("cli_need_arg"))
 
 if args.battery:
     kbd_led.stop_modes()
     kbd_led.start_battery()
+elif args.auto:
+    kbd_led.stop_modes()
+    kbd_led.start_auto()
 elif args.effect:
     key = EFFECT_NAMES.get(norm(args.effect))
     if not key:

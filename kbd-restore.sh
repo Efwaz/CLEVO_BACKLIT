@@ -8,6 +8,7 @@ STATE_FILE="$SCRIPT_DIR/kbd-state.txt"
 
 # Battery/effect mode enabled: hand over to the daemon (service is Type=simple, so it stays alive)
 [ -f "$SCRIPT_DIR/kbd-battery.enabled" ] && exec python3 "$SCRIPT_DIR/kbd-battery.py"
+[ -f "$SCRIPT_DIR/kbd-auto.enabled" ] && exec python3 "$SCRIPT_DIR/kbd-auto.py"
 [ -f "$SCRIPT_DIR/kbd-effect.txt" ] && exec python3 "$SCRIPT_DIR/kbd-effects.py"
 
 [ -f "$STATE_FILE" ] || exit 0

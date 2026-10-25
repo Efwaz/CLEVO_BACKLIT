@@ -10,6 +10,7 @@ _SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 FAVORITES_FILE = os.path.join(_SCRIPT_DIR, "kbd-favorites.txt")
 STATE_FILE = os.path.join(_SCRIPT_DIR, "kbd-state.txt")
 BATTERY_FLAG = os.path.join(_SCRIPT_DIR, "kbd-battery.enabled")  # exists = battery mode survives reboot
+AUTO_FLAG = os.path.join(_SCRIPT_DIR, "kbd-auto.enabled")  # exists = auto (daylight) mode survives reboot
 
 STANDARD_COLORS = [
     ("Blanco", (255, 255, 255), None),
@@ -28,7 +29,7 @@ EFFECT_FILE = os.path.join(_SCRIPT_DIR, "kbd-effect.txt")  # exists = effect mod
 
 EFFECTS = ("respiracion", "arcoiris", "onda", "pulsacion", "fuego", "latido")  # texts live in kbd_i18n
 
-_MODES = {"battery": "kbd-battery.py", "screen": "kbd_screen.py", "effect": "kbd-effects.py"}
+_MODES = {"battery": "kbd-battery.py", "screen": "kbd_screen.py", "effect": "kbd-effects.py", "auto": "kbd-auto.py"}
 
 
 def max_brightness():
@@ -87,7 +88,7 @@ def mode_running(mode=None):
 
 def stop_modes():
     """Stop every background mode and disable its persistence across reboots."""
-    for path in (BATTERY_FLAG, EFFECT_FILE):
+    for path in (BATTERY_FLAG, AUTO_FLAG, EFFECT_FILE):
         try:
             os.remove(path)
         except FileNotFoundError:
@@ -108,6 +109,12 @@ def start_battery():
     open(BATTERY_FLAG, "w").close()
     if not mode_running("battery"):
         _spawn(os.path.join(_SCRIPT_DIR, "kbd-battery.py"))
+
+
+def start_auto():
+    open(AUTO_FLAG, "w").close()
+    if not mode_running("auto"):
+        _spawn(os.path.join(_SCRIPT_DIR, "kbd-auto.py"))
 
 
 def start_screen(geometry):

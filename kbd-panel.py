@@ -203,6 +203,8 @@ class Panel(Gtk.Window):
         box.pack_start(self.screen_btn, False, False, 0)
         self.battery_btn = self._mode_button("battery", "battery", "battery_tip")
         box.pack_start(self.battery_btn, False, False, 0)
+        self.auto_btn = self._mode_button("auto", "auto", "auto_tip")
+        box.pack_start(self.auto_btn, False, False, 0)
 
         # effects need a plain base color, so they are greyed out while battery/live-screen own the color
         self.effects_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
@@ -222,7 +224,7 @@ class Panel(Gtk.Window):
         self.effects_box.pack_start(self.speed_scale, False, False, 0)
         box.pack_start(self.effects_box, False, False, 0)
 
-        for btn in (self.screen_btn, self.battery_btn):
+        for btn in (self.screen_btn, self.battery_btn, self.auto_btn):
             btn.connect("toggled", self._refresh_effects)
         self._refresh_effects()
         return box
@@ -399,7 +401,7 @@ class Panel(Gtk.Window):
             self._tr(btn.set_label, label_key)
         self._tr(btn.set_tooltip_text, tip_key)
         cfg = kbd_led.read_effect()
-        if mode in ("screen", "battery"):
+        if mode in ("screen", "battery", "auto"):
             btn.set_active(kbd_led.mode_running(mode))
         else:
             btn.set_active(bool(cfg) and cfg[0] == mode and kbd_led.mode_running("effect"))
@@ -408,7 +410,7 @@ class Panel(Gtk.Window):
         return btn
 
     def _refresh_effects(self, *_args):
-        blocked = self.screen_btn.get_active() or self.battery_btn.get_active()
+        blocked = any(b.get_active() for b in (self.screen_btn, self.battery_btn, self.auto_btn))
         self.effects_box.set_sensitive(not blocked)
         self.effects_label.set_text(t("effects_off" if blocked else "effects"))
 
@@ -428,13 +430,15 @@ class Panel(Gtk.Window):
     def on_mode_toggled(self, btn):
         if not btn.get_active():
             self.stop_modes()
-            if btn.mode not in ("screen", "battery"):  # effects: go back to the plain color
+            if btn.mode not in ("screen", "battery", "auto"):  # effects: go back to the plain color
                 self.apply_swatch(self.current_rgb, None)
             return
         self.stop_modes(keep=btn)
         if btn.mode == "battery":
             self._ensure_lit()
             kbd_led.start_battery()
+        elif btn.mode == "auto":
+            kbd_led.start_auto()  # no _ensure_lit: it is meant to be off in daylight
         elif btn.mode == "screen":
             geo = self._select_region()
             if not geo:
