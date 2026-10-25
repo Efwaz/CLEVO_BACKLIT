@@ -17,8 +17,10 @@ A small floating GTK panel plus a command-line tool.
 - **Screen color**: pick an area of the screen and use its dominant color, once (**Screen color**) or continuously (**Live screen**, adjustable rate).
 - **Battery mode**: red (low) → yellow-green → light blue (full). Pulses while charging, blinks when low and when charging stops at the limit.
 - **Effects**: Breathing, Rainbow, Wave, Reactive (flashes on key press), Fire, Heartbeat, with adjustable speed.
+- **Auto**: off in daylight, on from sunset to sunrise (computed offline, no dependencies), or between hours you choose (panel fields, or `kbd-ctl.py --hours 18:00-06:00`; `--hours sun` goes back to the sun). Sun times use the latitude/longitude at the top of `kbd-auto.py`: edit `LAT, LON` for your location.
 - **Persistence**: static color, battery mode and effects survive a reboot until you pick something else.
-- **CLI** for keyboard shortcuts, and a UI in 10 languages (⚙ menu → Language) and a light, dark or same-as-system theme (⚙ → Theme).
+- **Theme**: the panel can follow the system or be forced light or dark (⚙ → Theme).
+- **CLI** for keyboard shortcuts, and a UI in 10 languages (⚙ menu → Language).
 
 The LED is a single zone, so everything applies to the whole keyboard. Only one mode is active at a time;
 effects need a plain base color, so they are disabled while Battery or Live screen is on.
@@ -71,6 +73,8 @@ kbd-ctl.py --off
 - **Reactive** reads key-press events from `/dev/input` (hence the `input` group). Only the *timing* of presses is used; nothing is recorded.
 - Settings and state live next to the installed scripts: `kbd-state.txt`, `kbd-favorites.txt`, `kbd-lang.txt`, `kbd-rate.txt`,
   `kbd-theme.txt`, `kbd-effect.txt`, `kbd-battery.enabled`.
+- **Theme**: light/dark switch to the `-Dark` sibling of the current GTK theme and redefine the `*_breeze` colors with a built-in palette,
+  because generated `~/.config/gtk-3.0/colors.css` files (DMS/matugen) override any theme. "Same as system" leaves GTK untouched.
 - Other hardware: change `LED_PATH` in `kbd_led.py`. A driver with several zones or per-key RGB would need its own code.
 - **Add a language**: add an entry to `LANGS` and a value list to `_TEXTS` and `_CLI` in `kbd_i18n.py` (a check on import flags missing keys).
 
