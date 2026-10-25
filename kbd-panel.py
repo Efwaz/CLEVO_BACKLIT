@@ -128,6 +128,15 @@ class ColorWheel(Gtk.DrawingArea):
         return True
 
 
+_SYSTEM_DARK = Gtk.Settings.get_default().get_property("gtk-application-prefer-dark-theme")
+
+
+def apply_theme(mode):
+    """"system" restores the GTK setting found at startup; light/dark force prefer-dark."""
+    dark = _SYSTEM_DARK if mode == "system" else mode == "dark"
+    Gtk.Settings.get_default().set_property("gtk-application-prefer-dark-theme", dark)
+
+
 class Panel(Gtk.Window):
     def __init__(self):
         super().__init__()
@@ -278,6 +287,12 @@ class Panel(Gtk.Window):
                                           kbd_led.screen_fps(), kbd_led.set_screen_fps))
         menu.append(rate)
 
+        theme = Gtk.MenuItem()
+        self._tr(theme.set_label, "menu_theme")
+        theme.set_submenu(self._radio_menu([(t(f"theme_{m}"), m) for m in kbd_led.THEME_CHOICES],
+                                           kbd_led.theme(), self.on_theme_selected))
+        menu.append(theme)
+
         menu.append(Gtk.SeparatorMenuItem())
         about = Gtk.MenuItem()
         self._tr(about.set_label, "about")
@@ -306,6 +321,10 @@ class Panel(Gtk.Window):
                 setter(t(key))
             self._populate_flow()  # swatch names
             self._refresh_effects()
+
+    def on_theme_selected(self, mode):
+        kbd_led.set_theme(mode)
+        apply_theme(mode)
 
     def show_about(self):
         dlg = Gtk.AboutDialog(transient_for=self, modal=True)
@@ -634,6 +653,7 @@ class Panel(Gtk.Window):
         self._populate_flow()
 
 
+apply_theme(kbd_led.theme())
 win = Panel()
 win.show_all()
 Gtk.main()

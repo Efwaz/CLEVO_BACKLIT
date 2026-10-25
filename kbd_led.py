@@ -26,6 +26,8 @@ STANDARD_COLORS = [
 # background modes -> script that runs them
 SCREEN_FPS_FILE = os.path.join(_SCRIPT_DIR, "kbd-rate.txt")
 SCREEN_FPS_CHOICES = (10, 15, 20, 30)  # grim needs ~30ms per capture, so 30 is about the ceiling
+THEME_FILE = os.path.join(_SCRIPT_DIR, "kbd-theme.txt")
+THEME_CHOICES = ("system", "light", "dark")
 EFFECT_FILE = os.path.join(_SCRIPT_DIR, "kbd-effect.txt")  # exists = effect mode on (and survives reboot)
 
 EFFECTS = ("respiracion", "arcoiris", "onda", "pulsacion", "fuego", "latido")  # texts live in kbd_i18n
@@ -159,6 +161,21 @@ def screen_fps():
 def set_screen_fps(fps):
     with open(SCREEN_FPS_FILE, "w") as f:
         f.write(str(fps))
+
+
+def theme():
+    """Panel theme: "system" (follow GTK), "light" or "dark"."""
+    try:
+        with open(THEME_FILE) as f:
+            mode = f.read().strip()
+        return mode if mode in THEME_CHOICES else "system"
+    except OSError:
+        return "system"
+
+
+def set_theme(mode):
+    with open(THEME_FILE, "w") as f:
+        f.write(mode)
 
 
 def parse_hours(text):

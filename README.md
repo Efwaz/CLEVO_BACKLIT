@@ -18,7 +18,7 @@ A small floating GTK panel plus a command-line tool.
 - **Battery mode**: red (low) → yellow-green → light blue (full). Pulses while charging, blinks when low and when charging stops at the limit.
 - **Effects**: Breathing, Rainbow, Wave, Reactive (flashes on key press), Fire, Heartbeat, with adjustable speed.
 - **Persistence**: static color, battery mode and effects survive a reboot until you pick something else.
-- **CLI** for keyboard shortcuts, and a UI in 10 languages (⚙ menu → Language).
+- **CLI** for keyboard shortcuts, and a UI in 10 languages (⚙ menu → Language) and a light, dark or same-as-system theme (⚙ → Theme).
 
 The LED is a single zone, so everything applies to the whole keyboard. Only one mode is active at a time;
 effects need a plain base color, so they are disabled while Battery or Live screen is on.
@@ -70,7 +70,7 @@ kbd-ctl.py --off
   The cost grows with the size of the area, so capture is capped at about 35% of one CPU core; a small area gives the tightest sync.
 - **Reactive** reads key-press events from `/dev/input` (hence the `input` group). Only the *timing* of presses is used; nothing is recorded.
 - Settings and state live next to the installed scripts: `kbd-state.txt`, `kbd-favorites.txt`, `kbd-lang.txt`, `kbd-rate.txt`,
-  `kbd-effect.txt`, `kbd-battery.enabled`.
+  `kbd-theme.txt`, `kbd-effect.txt`, `kbd-battery.enabled`.
 - Other hardware: change `LED_PATH` in `kbd_led.py`. A driver with several zones or per-key RGB would need its own code.
 - **Add a language**: add an entry to `LANGS` and a value list to `_TEXTS` and `_CLI` in `kbd_i18n.py` (a check on import flags missing keys).
 
